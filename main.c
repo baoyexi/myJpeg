@@ -18,6 +18,11 @@
 #define LB_U32 unsigned int
 #define LB_U16 unsigned short
 #define LB_U8  unsigned char
+
+#define PRINT_BANNER()  printf("|                                            |\n");\
+                printf("|                                            |\n");\
+                printf("|                                            |\n");
+
 /************************ Static Structure Definition ************************/
 typedef struct {
     LB_U16 u32FramHdrLen; 
@@ -40,31 +45,23 @@ int parseHeader(char *pData, int length, PIC_HEADER_S* pstPicHeader){
     for(i=0; i<length-1; i++){
         if (0xff==(pData[i]&0xff)){
             if (0xd8==(pData[i+1]&0xff)){
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+                PRINT_BANNER();
                 printf("|---         Start of image               ---|\n");
             }
             
             if (0xda==(pData[i+1]&0xff)){
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+                PRINT_BANNER();
                 printf("|---         Start of scan                ---|\n");
             }
         
-            if (0xd9==(pData[i+1]&0xff)){    
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+            if (0xd9==(pData[i+1]&0xff)){
+                PRINT_BANNER();
                 printf("|---          End of image                ---|\n");
 
             }
             
             if (0xc0==(pData[i+1]&0xff)){
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+                PRINT_BANNER();
                 printf("|---          Baseline DCT                ---|\n");
                 //fhdrLen = (pData[i+2]<<8)|(pData[i+3]);  
                 pstPicHeader->u32FramHdrLen      = ((pData[i+2]&0xff)<<8)|((pData[i+3]&0xff));        
@@ -78,26 +75,20 @@ int parseHeader(char *pData, int length, PIC_HEADER_S* pstPicHeader){
                 pstPicHeader->Tqi                = (pData[i+12]&0xff);
             }
         
-            if (0xdb==(pData[i+1]&0xff)){  
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+            if (0xdb==(pData[i+1]&0xff)){
+                PRINT_BANNER();
                 printf("|---     Define quantization table(s)     ---|\n");
                 //parseQuaTable();
             }
             
-            if (0xc4==(pData[i+1]&0xff)){  
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+            if (0xc4==(pData[i+1]&0xff)){
+                PRINT_BANNER();
                 printf("|---        Define huffman table(s)       ---|\n");
                 //parseHuffmanTable();
             }
             
-            if (0xdd==(pData[i+1]&0xff)){  
-                printf("|                                            |\n");
-                printf("|                                            |\n");
-                printf("|                                            |\n");
+            if (0xdd==(pData[i+1]&0xff)){
+                PRINT_BANNER();
                 printf("|---       Define restart interval        ---|\n");
             }
         
@@ -117,6 +108,8 @@ int parseHeader(char *pData, int length, PIC_HEADER_S* pstPicHeader){
         }
     }    
     printf("|____________________________________________|\n");
+
+    return 0;
 }                                                                             
 
 int main() {                                                                  
@@ -133,12 +126,13 @@ int main() {
             return -1;                                                            
     }                                                                         
 
-    fseek(fp, 0, SEEK_END);//get the file length                              
-    fileLen = ftell(fp);                                                      
-#ifdef DEBUG_INFO                                                             
+    fseek(fp, 0, SEEK_END);
+    fileLen = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+#ifdef DEBUG_INFO
     printf("file len is %d\n", fileLen);                                      
 #endif                                                                        
-    fseek(fp, 0, SEEK_SET);//get the file length                              
+
     pData = malloc(fileLen*sizeof(char));                                     
     if (NULL==pData){                                                         
             return -1;                                                            
