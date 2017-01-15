@@ -15,31 +15,43 @@
 /****************************** Macro Definition *****************************/
 #define DEBUG_INFO   
 
-#define LB_U32 unsigned int
-#define LB_U16 unsigned short
-#define LB_U8  unsigned char
+#define MJ_U32 unsigned int
+#define MJ_U16 unsigned short
+#define MJ_U8  unsigned char
 
 #define PRINT_BANNER()  printf("|                                            |\n");\
                 printf("|                                            |\n");\
                 printf("|                                            |\n");
 
 /************************ Static Structure Definition ************************/
+typedef enum {
+    MARKER_SOI = 0XD8,
+    MARKER_EOI,
+}MJ_MARKER_E;
+
 typedef struct {
-    LB_U16 u32FramHdrLen; 
-    LB_U8  u32SamplePrecision; 
-    LB_U16 u32PicWidth; 
-    LB_U16 u32PicHeight; 
-    LB_U8  Nf; 
-    LB_U16 Ci; 
-    LB_U8  Hi;    
-    LB_U8  Vi; 
-    LB_U8 Tqi; 
+    MJ_U16 u32FramHdrLen; 
+    MJ_U8  u32SamplePrecision; 
+    MJ_U16 u32PicWidth; 
+    MJ_U16 u32PicHeight; 
+    MJ_U8  Nf; 
+    MJ_U16 Ci; 
+    MJ_U8  Hi;    
+    MJ_U8  Vi; 
+    MJ_U8 Tqi; 
 }PIC_HEADER_S;
 /***************************** Global Definition *****************************/
 /***************************** Static Definition *****************************/
 /*********************************** Code ************************************/
-int parseHeader(char *pData, int length, PIC_HEADER_S* pstPicHeader){
+int parseHeader(MJ_U8 *pData, int length, PIC_HEADER_S* pstPicHeader){
     int i = 0;
+
+    if(0XFF!=pData[0]||MARKER_SOI!=pData[1]){
+        printf("--------");
+    }
+    else{
+        printf("this is a jpeg format!!!\n");
+    }
 
     printf("\n\n\n|--------------------------------------------|\n");
     for(i=0; i<length-1; i++){
