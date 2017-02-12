@@ -13,8 +13,9 @@
 #include <stdio.h>
 #include <stdlib.h>                                                           
 /****************************** Macro Definition *****************************/
-#define DEBUG_INFO   
+#define DEBUG_INFO
 
+#define MJ_S32 int
 #define MJ_U32 unsigned int
 #define MJ_U16 unsigned short
 #define MJ_U8  unsigned char
@@ -25,8 +26,12 @@
 
 /************************ Static Structure Definition ************************/
 typedef enum {
-    MARKER_SOI = 0XD8,
+    MARKER_SOF0 = 0xC0,
+    MARKER_DHT  = 0XC4,
+    MARKER_SOI  = 0XD8,
     MARKER_EOI,
+    MARKER_DQT  = 0xDB,
+    MARKER_APP0 = 0XE0,
 }MJ_MARKER_E;
 
 typedef struct {
@@ -42,92 +47,84 @@ typedef struct {
 }PIC_HEADER_S;
 /***************************** Global Definition *****************************/
 /***************************** Static Definition *****************************/
+
+
 /*********************************** Code ************************************/
-int parseHeader(MJ_U8 *pData, int length, PIC_HEADER_S* pstPicHeader){
+int parseFrameHeader(MJ_U8 *pData, MJ_S32 length, PIC_HEADER_S* pstPicHeader)
+{
     int i = 0;
 
-    if(0XFF!=pData[0]||MARKER_SOI!=pData[1]){
-        printf("--------");
+    if(NULL==pData|| 0==length)
+        return -1;
+
+    pstPicHeader->u32SamplePrecision = pData[i++];
+    pstPicHeader->u32PicWidth = pData[i++]<<8|pData[i++];
+    pstPicHeader->u32PicHeight = pData[i++]<<8|pData[i++];
+    pstPicHeader->Nf = pData[i++];
+#ifdef DEBUG_INFO
+    printf("frame size is [%dx%d]\n", pstPicHeader->u32PicWidth, pstPicHeader->u32PicHeight);
+#endif
+    return 0;
+}
+
+
+
+int parseHeader(MJ_U8 *pData, MJ_S32 length, PIC_HEADER_S* pstPicHeader){
+    int i = 0;
+    MJ_U32 u32readptr = 0;
+    MJ_U32 s32SegIndicator = 0;
+    MJ_U32 s32SegLength = 0;
+    MJ_U8  *pSegData = NULL;
+
+    if(0XFF!=pData[u32readptr]||MARKER_SOI!=pData[u32readptr+1]){
+        printf("This is not a jpeg format!!!\n");
+        return -1;
     }
     else{
-        printf("this is a jpeg format!!!\n");
+        printf("This is a jpeg format!!!\n");
+        u32readptr = u32readptr+2;
+
     }
 
-    printf("\n\n\n|--------------------------------------------|\n");
-    for(i=0; i<length-1; i++){
-        if (0xff==(pData[i]&0xff)){
-            if (0xd8==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---         Start of image               ---|\n");
-            }
-            
-            if (0xda==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---         Start of scan                ---|\n");
-            }
-        
-            if (0xd9==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---          End of image                ---|\n");
+    while(u32readptr<length) {
+        if (0XFF == pData[u32readptr++]) {
+            s32SegIndicator = pData[u32readptr++];
+            s32SegLength = pData[u32readptr + 1] | pData[u32readptr] << 8;
+            pSegData = &pData[u32readptr + 2];
 
+            switch (s32SegIndicator) {
+                case MARKER_SOF0:
+                    printf("MARKER_SOF0\n");
+                    parseFrameHeader(pSegData, s32SegLength-3, pstPicHeader);
+                    break;
+                case MARKER_SOI:
+                    printf("MARKER_EOI\n");
+                    break;
+                case MARKER_EOI:
+                    printf("MARKER_EOI\n");
+                    break;
+                case MARKER_DQT:
+                    printf("MARKER_DQT\n");
+                    break;
+                case MARKER_APP0:
+                    printf("MARKER_DQT\n");
+                    break;
+                case MARKER_DHT:
+                    printf("MARKER_DQT\n");
+                    break;
+                default:
+                    break;
             }
-            
-            if (0xc0==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---          Baseline DCT                ---|\n");
-                //fhdrLen = (pData[i+2]<<8)|(pData[i+3]);  
-                pstPicHeader->u32FramHdrLen      = ((pData[i+2]&0xff)<<8)|((pData[i+3]&0xff));        
-                pstPicHeader->u32SamplePrecision = (pData[i+4]&0xff);
-                pstPicHeader->u32PicHeight       = ((pData[i+5]&0xff)<<8)|((pData[i+6]&0xff));
-                pstPicHeader->u32PicWidth        = ((pData[i+7]&0xff)<<8)|((pData[i+8]&0xff));
-                pstPicHeader->Nf                 = (pData[i+9]&0xff);                
-                pstPicHeader->Ci                 = (pData[i+10]&0xff);               
-                pstPicHeader->Hi                 = (pData[i+11]&0xf0);                
-                pstPicHeader->Vi                 = (pData[i+11]&0x0f);                
-                pstPicHeader->Tqi                = (pData[i+12]&0xff);
-            }
-        
-            if (0xdb==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---     Define quantization table(s)     ---|\n");
-                //parseQuaTable();
-            }
-            
-            if (0xc4==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---        Define huffman table(s)       ---|\n");
-                //parseHuffmanTable();
-            }
-            
-            if (0xdd==(pData[i+1]&0xff)){
-                PRINT_BANNER();
-                printf("|---       Define restart interval        ---|\n");
-            }
-        
-#if 0
-            if (0xc1==(pData[i+1]&0xff)){
-                printf("Extended sequential DCT\n");
-            }
-            if (0xc2==(pData[i+1]&0xff)){
-                printf("Progressive DCT\n");
-
-            }
-            if (0xc3==(pData[i+1]&0xff)){
-                    printf("Lossless (sequential)\n");
-            }
-
-#endif    
         }
-    }    
-    printf("|____________________________________________|\n");
+    }
 
     return 0;
 }                                                                             
 
-int main() {                                                                  
+int main(int argc, char **argv) {
     FILE *fp = NULL;                                                          
-    int readcnt = 0;                                                          
-    char *pData = NULL;                                                       
+    int readcnt = 0;
+    MJ_U8 *pData = NULL;
     int fileLen = 0;    
     PIC_HEADER_S stPicHeader;
 
